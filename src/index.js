@@ -2,6 +2,19 @@ import { createRoot } from "react-dom/client";
 import React, { useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 
+function App() {
+  return (
+    <div id="canvas-container">
+      <Canvas>
+        <ambientLight />
+        <pointLight position={[10, 10, 10]} />
+        <Box position={[-1.2, 0, 0]} />
+        <Box position={[1.2, 0, 0]} />
+      </Canvas>
+    </div>
+  );
+}
+
 function Box(props) {
   // This reference will give us direct access to the mesh
   const mesh = useRef();
@@ -26,11 +39,4 @@ function Box(props) {
   );
 }
 
-createRoot(document.getElementById("root")).render(
-  <Canvas>
-    <ambientLight />
-    <pointLight position={[10, 10, 10]} />
-    <Box position={[-1.2, 0, 0]} />
-    <Box position={[1.2, 0, 0]} />
-  </Canvas>
-);
+createRoot(document.getElementById("root")).render(<App />);
