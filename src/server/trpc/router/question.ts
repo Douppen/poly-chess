@@ -9,6 +9,15 @@ export const questionRouter = router({
     .mutation(async ({ input, ctx }) => {
       const sentAt = new Date().valueOf();
 
+      const timestampBeforeDb = new Date().valueOf();
+      const question: Question = await ctx.prisma.question.create({
+        data: {
+          body: input.text,
+        },
+      });
+      const timestampAfterDb = new Date().valueOf();
+      console.log("dbLatency: ", timestampAfterDb - timestampBeforeDb);
+
       const timestampBeforePusher = new Date().valueOf();
       await pusherServerClient.trigger("questions", "new-question", {
         sentAt,
@@ -19,15 +28,6 @@ export const questionRouter = router({
         "pusherSendLatency: ",
         timestampAfterPusher - timestampBeforePusher
       );
-
-      const timestampBeforeDb = new Date().valueOf();
-      const question: Question = await ctx.prisma.question.create({
-        data: {
-          body: input.text,
-        },
-      });
-      const timestampAfterDb = new Date().valueOf();
-      console.log("dbLatency: ", timestampAfterDb - timestampBeforeDb);
 
       return question;
     }),
