@@ -15,13 +15,14 @@
     "jsx": "preserve",
     "incremental": true,
     "noUncheckedIndexedAccess": true,
+    "baseUrl": "/src",
     "paths": {
-      "$server": ["src/server"],
-      "$server/*": ["src/server/*"],
-      "$components": ["src/components"],
-      "$components/*": ["src/components/*"],
-      "$utils": ["src/utils"],
-      "$utils/*": ["src/utils/*"]
+      "$server": ["server"],
+      "$server/*": ["server/*"],
+      "$components": ["components"],
+      "$components/*": ["components/*"],
+      "$utils": ["utils"],
+      "$utils/*": ["utils/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.cjs", "**/*.mjs"],
