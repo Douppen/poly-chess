@@ -2,6 +2,7 @@ import type { NextPage } from "next";
 import Head from "next/head";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { trpc } from "../utils/trpc";
+import Link from "next/link";
 
 const Home: NextPage = () => {
   const hello = trpc.example.hello.useQuery({ text: "from tRPC" });
@@ -54,6 +55,11 @@ const Home: NextPage = () => {
           {hello.data ? <p>{hello.data.greeting}</p> : <p>Loading..</p>}
         </div>
         <AuthShowcase />
+        <div className="mt-4">
+          <Link href="/questions">
+            <a className="text-lg hover:text-blue-700">See & ask questions</a>
+          </Link>
+        </div>
       </main>
     </>
   );

@@ -16,6 +16,12 @@ model Example {
     id String @id @default(cuid())
 }
 
+model Question {
+    id String @id @default(cuid())
+    body String @db.Text
+    createdAt DateTime       @default(now())
+}
+
 // Necessary for Next auth
 model Account {
     id                String  @id @default(cuid())
