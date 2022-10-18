@@ -74,9 +74,8 @@ const Questions = () => {
   );
 
   type PusherQuestion = {
-    id: string;
     body: string;
-    createdAt: string;
+    sentAt: number;
   };
 
   useEffect(() => {
@@ -86,9 +85,11 @@ const Questions = () => {
 
     const channel = pusher.subscribe("questions");
 
-    channel.bind("new-question", (data: { question: PusherQuestion }) => {
+    channel.bind("new-question", (data: PusherQuestion) => {
       console.log("pusher data: ", data);
-      setLatestQuestion(data.question);
+      const currentTime = new Date().valueOf();
+      console.log("latency: ", currentTime - data.sentAt);
+      setLatestQuestion(data);
       questions.refetch();
     });
 
