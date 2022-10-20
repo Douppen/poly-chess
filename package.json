@@ -20,6 +20,7 @@
     "@trpc/react": "10.0.0-proxy-beta.17",
     "@trpc/server": "10.0.0-proxy-beta.17",
     "@types/three": "^0.144.0",
+    "chess.js": "^1.0.0-alpha.0",
     "leva": "^0.9.31",
     "next": "12.3.1",
     "next-auth": "^4.12.3",
@@ -33,6 +34,7 @@
     "zustand": "^4.1.2"
   },
   "devDependencies": {
+    "@types/chess.js": "^0.13.3",
     "@types/node": "18.0.0",
     "@types/react": "18.0.14",
     "@types/react-dom": "18.0.5",
