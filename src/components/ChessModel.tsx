@@ -102,11 +102,17 @@ const Piece = ({
   );
 };
 
+interface ModelProps {
+  boardPosition: Position;
+  handleClick: (square: ChessVec) => void;
+  selectedSquare: ChessVec | null;
+}
+
 export default function ChessModel({
   boardPosition,
-}: {
-  boardPosition: Position;
-}) {
+  handleClick,
+  selectedSquare,
+}: ModelProps) {
   const { nodes, materials } = useGLTF(
     "/chess-set-models.glb"
   ) as unknown as GLTFResult;
@@ -138,14 +144,18 @@ export default function ChessModel({
           {new Array(8).fill(0).map((_, i) => {
             return new Array(8).fill(0).map((_, j) => {
               let color = (i + j) % 2 === 0 ? LIGHT_SQUARE : DARK_SQUARE;
+              if (selectedSquare?.x === i && selectedSquare?.y === j) {
+                color = "brown";
+              }
               if (hovered && hovered.x === i && hovered.y === j) {
-                color = "red";
+                color = "gray";
               }
               return (
                 <mesh
                   key={i + j * 8}
                   position={[-i, j - 7, 0]}
                   onPointerOver={() => setHovered({ x: i, y: j })}
+                  onPointerDown={() => handleClick({ x: i, y: j })}
                 >
                   <planeGeometry args={[1, 1]} />
                   <meshStandardMaterial color={color} />
