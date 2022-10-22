@@ -1,6 +1,6 @@
 import ChessModel from "../components/ChessModel";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { Html, OrbitControls } from "@react-three/drei";
 import { useState } from "react";
 import { Chess } from "chess.js";
 import { ChessVec } from "types/types";
@@ -29,6 +29,9 @@ const GamePage = () => {
 
   return (
     <div id="canvas-container" style={{ height: "100vh" }}>
+      <header className="absolute m-4 after:w-8">
+        It is {gameState.turn() === "w" ? "White's" : "Black's"} turn
+      </header>
       <Canvas camera={{ position: [-5, 8, -8], fov: 50 }}>
         <hemisphereLight color="white" intensity={0.45} />
         <spotLight position={[50, 50, 10]} angle={0.15} penumbra={1} />
