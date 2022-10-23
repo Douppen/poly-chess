@@ -5,7 +5,7 @@ export const validateMove = (
   fen: string,
   from: Square,
   to: Square
-): { success: boolean; requiresPromotion: boolean } => {
+): { isValid: boolean; requiresPromotion: boolean } => {
   const chessObject = new Chess(fen);
   const validMoves = chessObject.moves({
     square: from,
@@ -16,14 +16,14 @@ export const validateMove = (
 
   if (!move) {
     return {
-      success: false,
+      isValid: false,
       requiresPromotion: false,
     };
   } else {
     const requiresPromotion = move.flags.includes("p");
 
     return {
-      success: true,
+      isValid: true,
       requiresPromotion,
     };
   }

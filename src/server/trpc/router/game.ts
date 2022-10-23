@@ -4,7 +4,7 @@ import { SQUARES } from "$utils/constants";
 import { Chess } from "chess.js";
 import { randomId } from "$utils/nanoId";
 import { TRPCError } from "@trpc/server";
-import { validateMove } from "$utils/validateChessMove";
+import { validateMove } from "$utils/validateMove";
 import { makeMove } from "$utils/makeMove";
 
 export const gameRouter = router({
@@ -54,13 +54,13 @@ export const gameRouter = router({
         });
       }
 
-      const { success, requiresPromotion } = validateMove(
+      const { isValid, requiresPromotion } = validateMove(
         game.fen,
         input.from,
         input.to
       );
 
-      if (!success) {
+      if (!isValid) {
         return {
           success: false,
           fen: game.fen, // the initial fen
@@ -75,6 +75,8 @@ export const gameRouter = router({
       }
 
       const newFen = makeMove(game.fen, input.from, input.to, input.promotion);
+
+      // Pusher trigger here
 
       await ctx.prisma.chessgame.update({
         where: {

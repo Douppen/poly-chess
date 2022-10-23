@@ -11,6 +11,7 @@ import { useRouter } from "next/router";
 import { GetServerSidePropsContext } from "next";
 import { inferSSRProps } from "types/inferSSRProps";
 import prisma from "$server/db/client";
+import { validateMove } from "$utils/validateMove";
 
 const GamePage = ({
   gameId: serverGameId,
@@ -23,32 +24,45 @@ const GamePage = ({
   const moveMutation = trpc.game.move.useMutation();
 
   const handleClick = async (square: ChessVec) => {
-    if (selectedSquare) {
-      const san = {
-        from: vecToSan(selectedSquare),
-        to: vecToSan(square),
-      };
-      if (gameId) {
-        const res = await moveMutation.mutateAsync({
-          from: san.from,
-          to: san.to,
-          gameId,
-        });
-        if (!res.success) {
-          toast.error("Invalid move according to server");
-        } else {
-          toast.success("Move successful");
-          setGameState((game) => {
-            const newGame = new Chess(game.fen());
-            newGame.move({ from: san.from, to: san.to });
-            return newGame;
-          });
-        }
-      }
-      setSelectedSquare(null);
-    } else {
+    if (!selectedSquare) {
       setSelectedSquare(square);
+      return;
     }
+
+    const from = vecToSan(selectedSquare);
+    const to = vecToSan(square);
+
+    // client-side check first
+    const { isValid, requiresPromotion } = validateMove(
+      gameState.fen(),
+      from,
+      to
+    );
+
+    if (!isValid) {
+      toast.error("Invalid move");
+      return;
+    } else if (requiresPromotion) {
+      // TODO: implement promotion
+      toast.error("Promotion not supported yet");
+      return;
+    } else {
+      // TODO: optimistic update
+      toast.success("Move successful");
+      const { success, fen: newFen } = await moveMutation.mutateAsync({
+        gameId,
+        from,
+        to,
+      });
+      if (!success) {
+        toast.error("Invalid move from server");
+      } else {
+        toast.success("Move successful from server");
+        setGameState(new Chess(newFen));
+      }
+    }
+
+    setSelectedSquare(null);
   };
 
   return (
