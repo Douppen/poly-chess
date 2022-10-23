@@ -2,9 +2,9 @@ import { Chess, Move } from "chess.js";
 import { Square } from "chess.js";
 
 export const validateMove = (
+  fen: string,
   from: Square,
-  to: Square,
-  fen: string
+  to: Square
 ): { success: boolean; requiresPromotion: boolean } => {
   const chessObject = new Chess(fen);
   const validMoves = chessObject.moves({

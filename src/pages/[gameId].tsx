@@ -33,7 +33,6 @@ const GamePage = ({
           from: san.from,
           to: san.to,
           gameId,
-          fen: gameState.fen(),
         });
         if (!res.success) {
           toast.error("Invalid move according to server");
