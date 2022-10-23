@@ -28,6 +28,7 @@
     "pusher-js": "^7.4.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-hot-toast": "^2.4.0",
     "superjson": "1.9.1",
     "three": "^0.145.0",
     "zod": "^3.18.0",

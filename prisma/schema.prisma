@@ -22,6 +22,11 @@ model Question {
     createdAt DateTime       @default(now())
 }
 
+model Chessgame {
+    id String @id @default(cuid())
+    fen String @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") // <-- starting position
+}
+
 // Necessary for Next auth
 model Account {
     id                String  @id @default(cuid())
