@@ -22,6 +22,7 @@
     "@types/three": "^0.144.0",
     "chess.js": "^1.0.0-alpha.0",
     "leva": "^0.9.31",
+    "nanoid": "^4.0.0",
     "next": "12.3.1",
     "next-auth": "^4.12.3",
     "pusher": "^5.1.1-beta",

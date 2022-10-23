@@ -1,16 +1,17 @@
 import { router, publicProcedure } from "../trpc";
 import { z } from "zod";
-import { pusherServerClient } from "$server/common/pusher";
-import { Question } from "@prisma/client";
 import { SQUARES } from "$utils/constants";
 import { Chess } from "chess.js";
+import { randomId } from "$utils/nanoId";
 
 export const gameRouter = router({
   create: publicProcedure.mutation(async ({ input, ctx }) => {
     // TODO: game type should be inferred
     const game: { id: string; fen: string } = await ctx.prisma.chessgame.create(
       {
-        data: {},
+        data: {
+          id: randomId(),
+        },
       }
     );
 

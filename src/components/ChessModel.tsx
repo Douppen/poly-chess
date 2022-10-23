@@ -12,7 +12,7 @@ import { Html, useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { Color, PieceSymbol, Square } from "chess.js";
 import { Euler, Vector3 } from "@react-three/fiber";
-import { ChessVec } from "types/types";
+import { ChessVec } from "types/chessTypes";
 
 const LIGHT_SQUARE = "#DFD2C2";
 const DARK_SQUARE = "#4C4C4C";

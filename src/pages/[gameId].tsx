@@ -3,21 +3,24 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { useState } from "react";
 import { Chess } from "chess.js";
-import { ChessVec } from "types/types";
-import { vecToSan } from "$utils/helpers";
+import { ChessVec } from "types/chessTypes";
+import { vecToSan } from "$utils/chessHelpers";
 import { trpc } from "$utils/trpc";
 import toast, { Toaster } from "react-hot-toast";
+import { useRouter } from "next/router";
+import { GetServerSidePropsContext } from "next";
+import { inferSSRProps } from "types/inferSSRProps";
+import prisma from "$server/db/client";
 
-const GamePage = () => {
-  const [gameState, setGameState] = useState(
-    new Chess("8/8/8/8/8/8/8/8 w - - 0 1")
-  );
-  const [gameId, setGameId] = useState<string | null>(null);
+const GamePage = ({
+  gameId: serverGameId,
+  fen: serverFen,
+}: inferSSRProps<typeof getServerSideProps>) => {
+  const [gameState, setGameState] = useState(new Chess(serverFen));
+  const [gameId, setGameId] = useState<string>(serverGameId);
   const [selectedSquare, setSelectedSquare] = useState<ChessVec | null>(null);
 
   const moveMutation = trpc.game.move.useMutation();
-  const gameFromServer = trpc.game.get.useQuery();
-  const allGames = trpc.game.getAll.useQuery();
 
   const handleClick = async (square: ChessVec) => {
     if (selectedSquare) {
@@ -51,23 +54,10 @@ const GamePage = () => {
 
   return (
     <div id="canvas-container" style={{ height: "100vh" }}>
-      <div className="flex justify-around bg-gray-200 text-slate-700">
+      <div className="flex bg-gray-200 text-slate-700">
         <p>it is {gameState.turn() === "w" ? "white's" : "black's"} turn</p>
       </div>
-      <div className="flex justify-around bg-gray-200 text-slate-700">
-        {allGames.data &&
-          allGames.data.map((game) => (
-            <button
-              key={game.id}
-              onClick={() => {
-                setGameState(new Chess(game.fen));
-                setGameId(game.id);
-              }}
-            >
-              {game.id.substring(15, 20)}
-            </button>
-          ))}
-      </div>
+      <div className="flex bg-gray-200 text-slate-700">game id: {gameId}</div>
       <Toaster />
       <Canvas camera={{ position: [-5, 8, -8], fov: 50 }}>
         <hemisphereLight color="white" intensity={0.45} />
@@ -83,6 +73,35 @@ const GamePage = () => {
       </Canvas>
     </div>
   );
+};
+
+export const getServerSideProps = async (
+  context: GetServerSidePropsContext
+) => {
+  const gameId = context.params?.gameId as string;
+  const game = await prisma.chessgame.findFirst({
+    where: {
+      id: gameId,
+    },
+    select: {
+      fen: true,
+    },
+  });
+
+  if (!game) {
+    return {
+      notFound: true,
+    };
+  }
+
+  const fen = game.fen;
+
+  return {
+    props: {
+      gameId,
+      fen,
+    },
+  };
 };
 
 export default GamePage;
