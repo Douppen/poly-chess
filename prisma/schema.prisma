@@ -2,72 +2,133 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider = "prisma-client-js"
-    previewFeatures = ["referentialIntegrity"]
+  provider        = "prisma-client-js"
+  previewFeatures = ["referentialIntegrity"]
 }
 
 datasource db {
-    provider = "mysql"
-    url      = env("DATABASE_URL")
-    referentialIntegrity = "prisma"
+  provider             = "mysql"
+  url                  = env("DATABASE_URL")
+  referentialIntegrity = "prisma"
 }
 
 model Example {
-    id String @id @default(cuid())
+  id String @id @default(cuid())
 }
 
 model Question {
-    id String @id @default(cuid())
-    body String @db.Text
-    createdAt DateTime       @default(now())
+  id        String   @id @default(cuid())
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+}
+
+enum Winner {
+  white
+  black
+  draw
+}
+
+enum Cause {
+  resignation
+  timeout
+  checkmate
+  draw
+}
+
+enum Color {
+  white
+  black
+}
+
+enum GameState {
+  open
+  notStarted
+  ongoing
+  finished
 }
 
 model Chessgame {
-    id String @id @default(cuid())
-    fen String @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") // <-- starting position
+  id                 String    @id @default(cuid())
+  createdAt          DateTime  @default(now())
+  fen                String    @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") // <-- starting position
+  whiteUserId        String?
+  blackUserId        String?
+  players            Player[]
+  initialTimeSeconds Int
+  incrementSeconds   Int
+  gameCreatorId      String
+  state              GameState
+  result             Result?
+
+  whiteUser   User? @relation(fields: [whiteUserId], references: [id], name: "white")
+  blackUser   User? @relation(fields: [blackUserId], references: [id], name: "black")
+  gameCreator User  @relation(fields: [gameCreatorId], references: [id], name: "creator")
 }
 
-// Necessary for Next auth
-model Account {
-    id                String  @id @default(cuid())
-    userId            String
-    type              String
-    provider          String
-    providerAccountId String
-    refresh_token     String? @db.Text
-    access_token      String? @db.Text
-    expires_at        Int?
-    token_type        String?
-    scope             String?
-    id_token          String? @db.Text
-    session_state     String?
-    user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-    @@unique([provider, providerAccountId])
+model Result {
+  id          String    @id @default(cuid())
+  chessgameId String    @unique
+  chessgame   Chessgame @relation(fields: [chessgameId], references: [id])
+  winner      Winner
+  cause       Cause
+  finishedAt  DateTime
 }
 
-model Session {
-    id           String   @id @default(cuid())
-    sessionToken String   @unique
-    userId       String
-    expires      DateTime
-    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Player {
+  id              String   @id @default(cuid())
+  color           Color
+  gameId          String
+  remainingMillis Int      @default(300000)
+  endTimestamp    DateTime @db.DateTime(3) // Millisecond precision
+
+  game Chessgame @relation(fields: [gameId], references: [id])
 }
 
 model User {
-    id            String    @id @default(cuid())
-    name          String?
-    email         String?   @unique
-    emailVerified DateTime?
-    image         String?
-    accounts      Account[]
-    sessions      Session[]
+  id             String      @id @default(cuid())
+  name           String?
+  email          String?     @unique
+  emailVerified  DateTime?
+  image          String?
+  accounts       Account[]
+  sessions       Session[]
+  createdAt      DateTime    @default(now())
+  gamesAsWhite   Chessgame[] @relation("white")
+  gamesAsBlack   Chessgame[] @relation("black")
+  gamesAsCreator Chessgame[] @relation("creator")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
-    identifier String
-    token      String   @unique
-    expires    DateTime
+  identifier String
+  token      String   @unique
+  expires    DateTime
 
-    @@unique([identifier, token])
+  @@unique([identifier, token])
 }
