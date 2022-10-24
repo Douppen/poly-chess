@@ -10,13 +10,17 @@ import { makeMove } from "$utils/makeMove";
 export const gameRouter = router({
   create: publicProcedure.mutation(async ({ input, ctx }) => {
     // TODO: game type should be inferred
-    const game: { id: string; fen: string } = await ctx.prisma.chessgame.create(
-      {
-        data: {
-          id: randomId(),
-        },
-      }
-    );
+    const game = await ctx.prisma.chessgame.create({
+      data: {
+        incrementSeconds: 3,
+        initialTimeSeconds: 300,
+        state: "ongoing",
+      },
+      select: {
+        id: true,
+        fen: true,
+      },
+    });
 
     return game;
   }),
