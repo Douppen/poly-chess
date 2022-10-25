@@ -109,7 +109,7 @@ model Result {
 
 model User {
   id            String       @id @default(cuid())
-  username      String       @unique
+  username      String?       @unique
   name          String?
   email         String?      @unique
   emailVerified DateTime?
@@ -125,15 +125,15 @@ model User {
   preGamesAsCreator  PreGame[]   @relation("creator")
   preGamesAsOpponent PreGame[]   @relation("opponent")
 
-  isAdmin   Boolean
-  isBanned  Boolean
-  isPremium Boolean
-  isOnline  Boolean
+  isAdmin   Boolean @default(false)
+  isBanned  Boolean @default(false)
+  isPremium Boolean @default(false)
+  isOnline  Boolean @default(false)
 
-  bulletRating    Int
-  blitzRating     Int
-  rapidRating     Int
-  classicalRating Int
+  bulletRating    Int @default(1500)
+  blitzRating     Int @default(1500)
+  rapidRating     Int @default(1500)
+  classicalRating Int @default(1500)
   fideTitle       FideTitle?
 }
 
