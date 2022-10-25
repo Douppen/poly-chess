@@ -49,14 +49,14 @@ model PreGame {
 
   startingFen String @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") // <-- starting position
 
-  whiteBaseTimeSeconds Int
-  whiteIncrementSeconds   Int
-    blackBaseTimeSeconds Int
-    blackIncrementSeconds   Int
+  whiteBaseTimeSeconds  Int
+  whiteIncrementSeconds Int
+  blackBaseTimeSeconds  Int
+  blackIncrementSeconds Int
 
-  gameCreatorColor  PreGameColor
-  isRated      Boolean
-  isInviteOnly Boolean
+  gameCreatorColor PreGameColor
+  isRated          Boolean
+  isInviteOnly     Boolean
 
   hasResolved Boolean @default(false)
 
@@ -68,27 +68,27 @@ model PreGame {
 }
 
 model ChessGame {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  startingFen String
-  fen       String   
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  startingFen  String
+  fen          String
   movesHistory Json
 
-  whiteBaseTimeSeconds Int
-  whiteIncrementSeconds   Int
-    blackBaseTimeSeconds Int
-    blackIncrementSeconds   Int
+  whiteBaseTimeSeconds  Int
+  whiteIncrementSeconds Int
+  blackBaseTimeSeconds  Int
+  blackIncrementSeconds Int
 
   whiteRemainingMillis Int
-  whiteEndTimeMillis    Int
+  whiteEndTimeMillis   Int
   blackRemainingMillis Int
-  blackEndTimeMillis    Int
+  blackEndTimeMillis   Int
 
   gameCreatorColor Color
   state            GameState
-  isRated            Boolean
-  isInviteOnly       Boolean
-  drawOfferedBy   Color?
+  isRated          Boolean
+  isInviteOnly     Boolean
+  drawOfferedBy    Color?
   result           Result?
 
   gameCreatorId String
@@ -103,35 +103,38 @@ model Result {
   chessgameId String    @unique
   chessgame   ChessGame @relation(fields: [chessgameId], references: [id])
   winner      Winner
-  endReason       EndReason
-  endDateTime  DateTime
+  endReason   EndReason
+  endDateTime DateTime
 }
 
 model User {
-  id                 String      @id @default(cuid())
-  username           String      @unique
-  name               String?
-  email              String?     @unique
-  emailVerified      DateTime?
-  image              String?
-  country CountryCode? 
-  createdAt          DateTime    @default(now())
+  id            String       @id @default(cuid())
+  username      String       @unique
+  name          String?
+  email         String?      @unique
+  emailVerified DateTime?
+  image         String?
+  country       CountryCode?
+  createdAt     DateTime     @default(now())
 
-  accounts           Account[]
-  sessions           Session[]
+  accounts Account[]
+  sessions Session[]
 
   gamesAsCreator     ChessGame[] @relation("creator")
   gamesAsOpponent    ChessGame[] @relation("opponent")
   preGamesAsCreator  PreGame[]   @relation("creator")
   preGamesAsOpponent PreGame[]   @relation("opponent")
 
-  isAdmin Boolean
-  isBanned Boolean
+  isAdmin   Boolean
+  isBanned  Boolean
   isPremium Boolean
-  isOnline Boolean
+  isOnline  Boolean
 
-  eloRating Json
-  fideTitle FideTitle?
+  bulletRating    Int
+  blitzRating     Int
+  rapidRating     Int
+  classicalRating Int
+  fideTitle       FideTitle?
 }
 
 model Account {
@@ -170,142 +173,142 @@ model VerificationToken {
 }
 
 enum FideTitle {
-    grandmaster
-    internationaMaster
-    fideMaster
-    candidateMaster
+  grandmaster
+  internationaMaster
+  fideMaster
+  candidateMaster
 }
 
 enum CountryCode {
-    AFG
-    ALA
-    ALB
-    DZA
-    ASM
-    AND
-    AGO
-    AIA
-    ATA
-    ATG
-    ARG
-    ARM
-    ABW
-    AUS
-    AUT
-    AZE
-    BHS
-    BHR
-    BGD
-    BRB
-    BLR
-    BEL
-    BLZ
-    BEN
-    BMU
-    BTN
-    BOL
-    BES
-    BIH
-    BWA
-    BVT
-    BRA
-    IOT
-    BRN
-    BGR
-    BFA
-    BDI
-    CPV
-    KHM
-    CMR
-    CAN
-    CYM
-    CAF
-    TCD
-    CHL
-    CHN
-    CXR
-    CCK
-    COL
-    COM
-    COG
-    COD
-    COK
-    CRI
-    CIV
-    HRV
-    CUB
-    CUW
-    CYP
-    CZE
-    DNK
-    DJI
-    DMA
-    DOM
-    ECU
-    EGY
-    SLV
-    GNQ
-    ERI
-    EST
-    SWZ
-    ETH
-    FLK
-    FRO
-    FJI
-    FIN
-    FRA
-    GUF
-    PYF
-    ATF
-    GAB
-    GMB
-    GEO
-    DEU
-    GHA
-    GIB
-    GRC
-    GRL
-    GRD
-    GLP
-    GUM
-    GTM
-    GGY
-    GIN
-    GNB
-    GUY
-    HTI
-    HMD
-    VAT
-    HND
-    HKG
-    HUN
-    ISL
-    IND
-    IDN
-    IRN
-    IRQ
-    IRL
-    IMN
-    ISR
-    ITA
-    JAM
-    JPN
-    JEY
-    JOR
-    KAZ
-    KEN
-    KIR
-    PRK
-    KOR
-    KWT
-    KGZ
-    LAO
-    LVA
-    LBN
-    LSO
-    LBR
-    LBY
-    LIE
-    LTU
-    LUX
+  AFG
+  ALA
+  ALB
+  DZA
+  ASM
+  AND
+  AGO
+  AIA
+  ATA
+  ATG
+  ARG
+  ARM
+  ABW
+  AUS
+  AUT
+  AZE
+  BHS
+  BHR
+  BGD
+  BRB
+  BLR
+  BEL
+  BLZ
+  BEN
+  BMU
+  BTN
+  BOL
+  BES
+  BIH
+  BWA
+  BVT
+  BRA
+  IOT
+  BRN
+  BGR
+  BFA
+  BDI
+  CPV
+  KHM
+  CMR
+  CAN
+  CYM
+  CAF
+  TCD
+  CHL
+  CHN
+  CXR
+  CCK
+  COL
+  COM
+  COG
+  COD
+  COK
+  CRI
+  CIV
+  HRV
+  CUB
+  CUW
+  CYP
+  CZE
+  DNK
+  DJI
+  DMA
+  DOM
+  ECU
+  EGY
+  SLV
+  GNQ
+  ERI
+  EST
+  SWZ
+  ETH
+  FLK
+  FRO
+  FJI
+  FIN
+  FRA
+  GUF
+  PYF
+  ATF
+  GAB
+  GMB
+  GEO
+  DEU
+  GHA
+  GIB
+  GRC
+  GRL
+  GRD
+  GLP
+  GUM
+  GTM
+  GGY
+  GIN
+  GNB
+  GUY
+  HTI
+  HMD
+  VAT
+  HND
+  HKG
+  HUN
+  ISL
+  IND
+  IDN
+  IRN
+  IRQ
+  IRL
+  IMN
+  ISR
+  ITA
+  JAM
+  JPN
+  JEY
+  JOR
+  KAZ
+  KEN
+  KIR
+  PRK
+  KOR
+  KWT
+  KGZ
+  LAO
+  LVA
+  LBN
+  LSO
+  LBR
+  LBY
+  LIE
+  LTU
+  LUX
 }
