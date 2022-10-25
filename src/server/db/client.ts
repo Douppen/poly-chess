@@ -16,5 +16,3 @@ export const prisma = global.prisma || new PrismaClient(prismaOptions);
 if (env.NODE_ENV !== "production") {
   global.prisma = prisma;
 }
-
-export default prisma;

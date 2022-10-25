@@ -72,7 +72,7 @@ model ChessGame {
   createdAt    DateTime @default(now())
   startingFen  String
   fen          String
-  movesHistory Json
+  movesHistory Json @default("[]")
 
   whiteBaseTimeSeconds  Int
   whiteIncrementSeconds Int

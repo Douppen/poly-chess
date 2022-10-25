@@ -9,7 +9,7 @@ import { trpc } from "$utils/trpc";
 import toast, { Toaster } from "react-hot-toast";
 import { GetServerSidePropsContext } from "next";
 import { inferSSRProps } from "types/inferSSRProps";
-import prisma from "$server/db/client";
+import { prisma } from "$server/db/client";
 import { validateMove } from "$utils/validateMove";
 
 const GamePage = ({

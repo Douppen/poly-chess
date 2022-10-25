@@ -5,8 +5,6 @@ import { trpc } from "../utils/trpc";
 import Link from "next/link";
 
 const Home: NextPage = () => {
-  const hello = trpc.example.hello.useQuery({ text: "from tRPC" });
-
   return (
     <>
       <Head>
@@ -50,9 +48,6 @@ const Home: NextPage = () => {
             description="Build data-driven JavaScript & TypeScript apps in less time"
             documentation="https://www.prisma.io/docs/"
           />
-        </div>
-        <div className="flex w-full items-center justify-center pt-6 text-2xl text-blue-500">
-          {hello.data ? <p>{hello.data.greeting}</p> : <p>Loading..</p>}
         </div>
         <AuthShowcase />
         <div className="mt-4">
