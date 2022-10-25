@@ -9,7 +9,7 @@ import { makeMove } from "$utils/makeMove";
 import { PreGameColor } from "@prisma/client";
 
 export const gameRouter = router({
-  create: protectedProcedure
+  createPreGame: protectedProcedure
     .input(
       z.object({
         blackBaseTimeSeconds: z.number().min(10).max(86400),
@@ -61,6 +61,7 @@ export const gameRouter = router({
 
       return preGame;
     }),
+
   get: publicProcedure.query(({ ctx }) => {
     const game = ctx.prisma.chessGame.findFirst();
     return game;
