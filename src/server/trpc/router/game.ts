@@ -1,4 +1,4 @@
-import { router, publicProcedure } from "../trpc";
+import { router, publicProcedure, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { SQUARES } from "$utils/constants";
 import { Chess } from "chess.js";
@@ -6,30 +6,67 @@ import { randomId } from "$utils/nanoId";
 import { TRPCError } from "@trpc/server";
 import { validateMove } from "$utils/validateMove";
 import { makeMove } from "$utils/makeMove";
+import { PreGameColor } from "@prisma/client";
 
 export const gameRouter = router({
-  create: publicProcedure.mutation(async ({ input, ctx }) => {
-    // TODO: game type should be inferred
-    const game = await ctx.prisma.chessgame.create({
-      data: {
-        incrementSeconds: 3,
-        initialTimeSeconds: 300,
-        state: "ongoing",
-      },
-      select: {
-        id: true,
-        fen: true,
-      },
-    });
+  create: protectedProcedure
+    .input(
+      z.object({
+        blackBaseTimeSeconds: z.number().min(10).max(86400),
+        blackIncrementSeconds: z.number().min(0).max(6000).default(0),
+        whiteBaseTimeSeconds: z.number().min(10).max(86400),
+        whiteIncrementSeconds: z.number().min(0).max(6000).default(0),
+        startingFen: z.string().optional(),
+        isRated: z.boolean().default(false),
+        isInviteOnly: z.boolean().default(false),
+        color: z.enum(["black", "white", "random"]),
+        opponentUsername: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const {
+        blackBaseTimeSeconds,
+        blackIncrementSeconds,
+        whiteBaseTimeSeconds,
+        whiteIncrementSeconds,
+        startingFen,
+        isRated,
+        isInviteOnly,
+        color,
+        opponentUsername,
+      } = input;
 
-    return game;
-  }),
+      const preGame = await ctx.prisma.preGame.create({
+        data: {
+          blackBaseTimeSeconds,
+          blackIncrementSeconds,
+          whiteBaseTimeSeconds,
+          whiteIncrementSeconds,
+          isRated,
+          isInviteOnly,
+          startingFen,
+          gameCreatorColor: color,
+          preGameCreator: {
+            connect: {
+              id: ctx.session.user.id,
+            },
+          },
+          preGameOpponent: {
+            connect: {
+              username: opponentUsername,
+            },
+          },
+        },
+      });
+
+      return preGame;
+    }),
   get: publicProcedure.query(({ ctx }) => {
-    const game = ctx.prisma.chessgame.findFirst();
+    const game = ctx.prisma.chessGame.findFirst();
     return game;
   }),
   getAll: publicProcedure.query(({ ctx }) => {
-    const games = ctx.prisma.chessgame.findMany();
+    const games = ctx.prisma.chessGame.findMany();
     return games;
   }),
   move: publicProcedure
@@ -42,7 +79,7 @@ export const gameRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const game = await ctx.prisma.chessgame.findUnique({
+      const game = await ctx.prisma.chessGame.findUnique({
         where: {
           id: input.gameId,
         },
@@ -82,7 +119,7 @@ export const gameRouter = router({
 
       // Pusher trigger here
 
-      await ctx.prisma.chessgame.update({
+      await ctx.prisma.chessGame.update({
         where: {
           id: input.gameId,
         },
