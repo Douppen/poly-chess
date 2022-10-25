@@ -18,7 +18,7 @@ enum Winner {
   draw
 }
 
-enum Cause {
+enum EndReason {
   resignation
   timeout
   checkmate
@@ -47,17 +47,19 @@ model PreGame {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  fen String @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") // <-- starting position
+  startingFen String @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") // <-- starting position
 
-  initialTimeSeconds Int
-  incrementSeconds   Int
-
-  rated      Boolean
-  inviteOnly Boolean
-
-  resolved Boolean @default(false)
+  whiteBaseTimeSeconds Int
+  whiteIncrementSeconds   Int
+    blackBaseTimeSeconds Int
+    blackIncrementSeconds   Int
 
   gameCreatorColor  PreGameColor
+  isRated      Boolean
+  isInviteOnly Boolean
+
+  hasResolved Boolean @default(false)
+
   preGameCreatorId  String
   preGameOpponentId String?
 
@@ -68,20 +70,25 @@ model PreGame {
 model ChessGame {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-  fen       String   @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") // <-- starting position
+  startingFen String
+  fen       String   
+  movesHistory Json
 
-  initialTimeSeconds Int
-  incrementSeconds   Int
+  whiteBaseTimeSeconds Int
+  whiteIncrementSeconds   Int
+    blackBaseTimeSeconds Int
+    blackIncrementSeconds   Int
 
   whiteRemainingMillis Int
-  whiteEndTimestamp    DateTime @db.DateTime(3)
+  whiteEndTimeMillis    Int
   blackRemainingMillis Int
-  blackEndTimestamp    DateTime @db.DateTime(3)
+  blackEndTimeMillis    Int
 
   gameCreatorColor Color
   state            GameState
-  rated            Boolean
-  inviteOnly       Boolean
+  isRated            Boolean
+  isInviteOnly       Boolean
+  drawOfferedBy   Color?
   result           Result?
 
   gameCreatorId String
@@ -96,23 +103,35 @@ model Result {
   chessgameId String    @unique
   chessgame   ChessGame @relation(fields: [chessgameId], references: [id])
   winner      Winner
-  cause       Cause
-  finishedAt  DateTime
+  endReason       EndReason
+  endDateTime  DateTime
 }
 
 model User {
   id                 String      @id @default(cuid())
+  username           String      @unique
   name               String?
   email              String?     @unique
   emailVerified      DateTime?
   image              String?
+  country CountryCode? 
+  createdAt          DateTime    @default(now())
+
   accounts           Account[]
   sessions           Session[]
-  createdAt          DateTime    @default(now())
+
   gamesAsCreator     ChessGame[] @relation("creator")
   gamesAsOpponent    ChessGame[] @relation("opponent")
   preGamesAsCreator  PreGame[]   @relation("creator")
   preGamesAsOpponent PreGame[]   @relation("opponent")
+
+  isAdmin Boolean
+  isBanned Boolean
+  isPremium Boolean
+  isOnline Boolean
+
+  eloRating Json
+  fideTitle FideTitle?
 }
 
 model Account {
@@ -148,4 +167,145 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+enum FideTitle {
+    grandmaster
+    internationaMaster
+    fideMaster
+    candidateMaster
+}
+
+enum CountryCode {
+    AFG
+    ALA
+    ALB
+    DZA
+    ASM
+    AND
+    AGO
+    AIA
+    ATA
+    ATG
+    ARG
+    ARM
+    ABW
+    AUS
+    AUT
+    AZE
+    BHS
+    BHR
+    BGD
+    BRB
+    BLR
+    BEL
+    BLZ
+    BEN
+    BMU
+    BTN
+    BOL
+    BES
+    BIH
+    BWA
+    BVT
+    BRA
+    IOT
+    BRN
+    BGR
+    BFA
+    BDI
+    CPV
+    KHM
+    CMR
+    CAN
+    CYM
+    CAF
+    TCD
+    CHL
+    CHN
+    CXR
+    CCK
+    COL
+    COM
+    COG
+    COD
+    COK
+    CRI
+    CIV
+    HRV
+    CUB
+    CUW
+    CYP
+    CZE
+    DNK
+    DJI
+    DMA
+    DOM
+    ECU
+    EGY
+    SLV
+    GNQ
+    ERI
+    EST
+    SWZ
+    ETH
+    FLK
+    FRO
+    FJI
+    FIN
+    FRA
+    GUF
+    PYF
+    ATF
+    GAB
+    GMB
+    GEO
+    DEU
+    GHA
+    GIB
+    GRC
+    GRL
+    GRD
+    GLP
+    GUM
+    GTM
+    GGY
+    GIN
+    GNB
+    GUY
+    HTI
+    HMD
+    VAT
+    HND
+    HKG
+    HUN
+    ISL
+    IND
+    IDN
+    IRN
+    IRQ
+    IRL
+    IMN
+    ISR
+    ITA
+    JAM
+    JPN
+    JEY
+    JOR
+    KAZ
+    KEN
+    KIR
+    PRK
+    KOR
+    KWT
+    KGZ
+    LAO
+    LVA
+    LBN
+    LSO
+    LBR
+    LBY
+    LIE
+    LTU
+    LUX
 }
