@@ -12,16 +12,6 @@ datasource db {
   referentialIntegrity = "prisma"
 }
 
-model Example {
-  id String @id @default(cuid())
-}
-
-model Question {
-  id        String   @id @default(cuid())
-  body      String   @db.Text
-  createdAt DateTime @default(now())
-}
-
 enum Winner {
   white
   black
@@ -38,6 +28,12 @@ enum Cause {
 enum Color {
   white
   black
+}
+
+enum PreGameColor {
+  white
+  black
+  random
 }
 
 enum GameState {
@@ -61,7 +57,7 @@ model PreGame {
 
   resolved Boolean @default(false)
 
-  gameCreatorColor  Color?
+  gameCreatorColor  PreGameColor
   preGameCreatorId  String
   preGameOpponentId String?
 
