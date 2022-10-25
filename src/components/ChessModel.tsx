@@ -8,7 +8,7 @@ title: Low Poly Chess Set
 
 import * as THREE from "three";
 import React, { useState } from "react";
-import { Html, useGLTF } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import { Color, PieceSymbol, Square } from "chess.js";
 import { Euler, Vector3 } from "@react-three/fiber";

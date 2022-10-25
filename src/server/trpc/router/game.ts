@@ -1,12 +1,13 @@
 import { router, publicProcedure, protectedProcedure } from "../trpc";
 import { z } from "zod";
 import { SQUARES } from "$utils/constants";
-import { Chess } from "chess.js";
-import { randomId } from "$utils/nanoId";
 import { TRPCError } from "@trpc/server";
 import { validateMove } from "$utils/validateMove";
 import { makeMove } from "$utils/makeMove";
-import { PreGameColor } from "@prisma/client";
+import { randomId } from "$utils/nanoId";
+import { Chess } from "chess.js";
+import { MovesHistory } from "types/chessTypes";
+import { Prisma } from "@prisma/client";
 
 export const gameRouter = router({
   createPreGame: protectedProcedure
@@ -36,8 +37,40 @@ export const gameRouter = router({
         opponentUsername,
       } = input;
 
+      let gameId = randomId();
+      // check that the game id is unique
+      while (await ctx.prisma.chessGame.findUnique({ where: { id: gameId } })) {
+        gameId = randomId();
+      }
+
+      const opponent = await ctx.prisma.user.findUnique({
+        where: { username: opponentUsername },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!opponent) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Could not find opponent with that username",
+        });
+      }
+
+      if (input.startingFen) {
+        const chessEngine = new Chess();
+        const isValidFen = chessEngine.load(input.startingFen);
+        if (!isValidFen) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid FEN",
+          });
+        }
+      }
+
       const preGame = await ctx.prisma.preGame.create({
         data: {
+          id: gameId,
           blackBaseTimeSeconds,
           blackIncrementSeconds,
           whiteBaseTimeSeconds,
@@ -53,13 +86,121 @@ export const gameRouter = router({
           },
           preGameOpponent: {
             connect: {
-              username: opponentUsername,
+              id: opponent.id,
             },
           },
+        },
+        select: {
+          id: true,
         },
       });
 
       return preGame;
+    }),
+  createGameFromPreGame: protectedProcedure
+    .input(
+      z.object({
+        preGameId: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      // We make it the opponent's responsibility to create the game when they accept the pre-game
+      const { preGameId } = input;
+
+      const preGame = await ctx.prisma.preGame.findUnique({
+        where: {
+          id: preGameId,
+        },
+        include: {
+          preGameCreator: true,
+          preGameOpponent: true, // opponent is going to exist here because for the game to be created, the opponent must have accepted the preGame
+        },
+      });
+
+      if (!preGame) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Pre-game not found",
+        });
+      }
+
+      if (preGame.hasResolved) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Pre-game has already been resolved",
+        });
+      }
+
+      if (
+        preGame.isInviteOnly &&
+        preGame.preGameOpponentId !== ctx.session.user.id
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You are not invited to this game",
+        });
+      }
+
+      if (preGame.preGameCreatorId === ctx.session.user.id) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "You cannot play against yourself",
+        });
+      }
+
+      // if no one has been invited to the game yet, the user making the request should be the opponent
+      let opponentId: string;
+      if (!preGame.preGameOpponent) {
+        opponentId = ctx.session.user.id as string;
+      } else {
+        opponentId = preGame.preGameOpponent.id;
+      }
+
+      const gameCreatorColor =
+        preGame.gameCreatorColor === "random"
+          ? Math.random() > 0.5
+            ? "white"
+            : "black"
+          : preGame.gameCreatorColor;
+
+      const movesHistory: MovesHistory = [];
+
+      const game = await ctx.prisma.chessGame.create({
+        data: {
+          id: preGameId,
+          blackBaseTimeSeconds: preGame.blackBaseTimeSeconds,
+          blackIncrementSeconds: preGame.blackIncrementSeconds,
+          whiteBaseTimeSeconds: preGame.whiteBaseTimeSeconds,
+          whiteIncrementSeconds: preGame.whiteIncrementSeconds,
+          isRated: preGame.isRated,
+          startingFen: preGame.startingFen,
+          gameCreatorColor,
+          gameCreator: {
+            connect: {
+              id: preGame.preGameCreatorId,
+            },
+          },
+          opponent: {
+            connect: {
+              id: opponentId,
+            },
+          },
+          blackRemainingMillis: preGame.blackBaseTimeSeconds * 1000,
+          whiteRemainingMillis: preGame.whiteBaseTimeSeconds * 1000,
+          fen: preGame.startingFen,
+          isInviteOnly: preGame.isInviteOnly,
+          state: "notStarted",
+          movesHistory,
+        },
+      });
+
+      await ctx.prisma.preGame.delete({
+        where: {
+          id: preGameId,
+        },
+      });
+
+      return game;
     }),
 
   get: publicProcedure.query(({ ctx }) => {

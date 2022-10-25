@@ -5,7 +5,7 @@ export interface ChessVec {
   y: number;
 }
 
-export interface MoveInfo {
+export type MoveInfo = {
   color: "white" | "black";
   from: Square;
   to: Square;
@@ -19,9 +19,9 @@ export interface MoveInfo {
   endTimeMillis: number;
 
   fenAfterMove: string;
-}
+};
 
-export type MovesList = MoveInfo[];
+export type MovesHistory = Array<MoveInfo>;
 
 export enum Flag {
   NORMAL = "n",

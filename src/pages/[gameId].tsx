@@ -7,7 +7,6 @@ import { ChessVec } from "types/chessTypes";
 import { vecToSan } from "$utils/chessHelpers";
 import { trpc } from "$utils/trpc";
 import toast, { Toaster } from "react-hot-toast";
-import { useRouter } from "next/router";
 import { GetServerSidePropsContext } from "next";
 import { inferSSRProps } from "types/inferSSRProps";
 import prisma from "$server/db/client";
@@ -92,7 +91,7 @@ export const getServerSideProps = async (
   context: GetServerSidePropsContext
 ) => {
   const gameId = context.params?.gameId as string;
-  const game = await prisma.chessgame.findFirst({
+  const game = await prisma.chessGame.findFirst({
     where: {
       id: gameId,
     },

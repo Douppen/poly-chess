@@ -43,7 +43,7 @@ enum GameState {
 }
 
 model PreGame {
-  id        String   @id @default(cuid())
+  id        String   @id @default(cuid()) @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -68,7 +68,7 @@ model PreGame {
 }
 
 model ChessGame {
-  id           String   @id @default(cuid())
+  id           String   @id @default(cuid()) @unique
   createdAt    DateTime @default(now())
   startingFen  String
   fen          String
@@ -79,10 +79,10 @@ model ChessGame {
   blackBaseTimeSeconds  Int
   blackIncrementSeconds Int
 
-  whiteRemainingMillis Int
-  whiteEndTimeMillis   Int
-  blackRemainingMillis Int
-  blackEndTimeMillis   Int
+  whiteRemainingMillis Int?
+  whiteEndTimeMillis   Int?
+  blackRemainingMillis Int?
+  blackEndTimeMillis   Int?
 
   gameCreatorColor Color
   state            GameState
