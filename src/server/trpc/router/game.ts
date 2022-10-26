@@ -9,6 +9,7 @@ import { Chess } from "chess.js";
 import { MovesHistory } from "types/chessTypes";
 import { Prisma } from "@prisma/client";
 import { getColorFromFen } from "$utils/getColorFromFen";
+import { pusherServerClient } from "$server/common/pusher";
 
 export const gameRouter = router({
   createPreGame: protectedProcedure
@@ -285,6 +286,10 @@ export const gameRouter = router({
       }
 
       const newFen = makeMove(game.fen, input.from, input.to, input.promotion);
+
+      await pusherServerClient.trigger("chessgame", "new-move", {
+        newFen,
+      });
 
       await ctx.prisma.chessGame.update({
         where: {

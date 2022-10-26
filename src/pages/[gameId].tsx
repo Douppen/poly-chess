@@ -1,7 +1,7 @@
 import ChessModel from "../components/ChessModel";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Chess } from "chess.js";
 import { ChessVec } from "types/chessTypes";
 import { vecToSan } from "$utils/chessHelpers";
@@ -11,6 +11,8 @@ import { GetServerSidePropsContext } from "next";
 import { inferSSRProps } from "types/inferSSRProps";
 import { prisma } from "$server/db/client";
 import { validateMove } from "$utils/validateMove";
+import Pusher from "pusher-js";
+import { env } from "env/client.mjs";
 
 const GamePage = ({
   gameId: serverGameId,
@@ -64,6 +66,21 @@ const GamePage = ({
     setSelectedSquare(null);
   };
 
+  useEffect(() => {
+    const pusher = new Pusher(env.NEXT_PUBLIC_PUSHER_KEY, {
+      cluster: env.NEXT_PUBLIC_PUSHER_APP_CLUSTER,
+    });
+
+    const channel = pusher.subscribe("chessgame");
+
+    channel.bind("new-move", (data: PusherNewMove) => {
+      console.log("pusher data: ", data);
+      setGameState(new Chess(data.newFen));
+    });
+
+    return () => pusher.disconnect();
+  }, []);
+
   return (
     <div id="canvas-container" style={{ height: "100vh" }}>
       <div className="flex bg-gray-200 text-slate-700">
@@ -85,6 +102,10 @@ const GamePage = ({
       </Canvas>
     </div>
   );
+};
+
+type PusherNewMove = {
+  newFen: string;
 };
 
 export const getServerSideProps = async (
