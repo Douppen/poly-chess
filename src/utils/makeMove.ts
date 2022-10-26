@@ -1,7 +1,11 @@
 import { Chess } from "chess.js";
 import { Square } from "chess.js";
 
-// This function assumes the move is valid
+/**
+ * This function does not validate the move.
+ *
+ * It returns the new FEN string
+ */
 export const makeMove = (
   fen: string,
   from: Square,

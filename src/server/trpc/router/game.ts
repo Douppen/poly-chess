@@ -8,6 +8,7 @@ import { randomId } from "$utils/nanoId";
 import { Chess } from "chess.js";
 import { MovesHistory } from "types/chessTypes";
 import { Prisma } from "@prisma/client";
+import { getColorFromFen } from "$utils/getColorFromFen";
 
 export const gameRouter = router({
   createPreGame: protectedProcedure
@@ -38,7 +39,6 @@ export const gameRouter = router({
       } = input;
 
       let gameId = randomId();
-      // check that the game id is unique
       while (await ctx.prisma.chessGame.findUnique({ where: { id: gameId } })) {
         gameId = randomId();
       }
@@ -211,7 +211,7 @@ export const gameRouter = router({
     const games = ctx.prisma.chessGame.findMany();
     return games;
   }),
-  move: publicProcedure
+  move: protectedProcedure
     .input(
       z.object({
         gameId: z.string(),
@@ -227,6 +227,9 @@ export const gameRouter = router({
         },
         select: {
           fen: true,
+          gameCreatorId: true,
+          opponentId: true,
+          gameCreatorColor: true,
         },
       });
 
@@ -237,6 +240,16 @@ export const gameRouter = router({
         });
       }
 
+      if (
+        game.gameCreatorId !== ctx.session.user.id &&
+        game.opponentId !== ctx.session.user.id
+      ) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "You are not a part of this game",
+        });
+      }
+
       const { isValid, requiresPromotion } = validateMove(
         game.fen,
         input.from,
@@ -244,22 +257,32 @@ export const gameRouter = router({
       );
 
       if (!isValid) {
-        return {
-          success: false,
-          fen: game.fen, // the initial fen
-        };
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid move",
+        });
       }
 
       if (requiresPromotion && !input.promotion) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "promotion not specified",
+          message: "Promotion not specified",
+        });
+      }
+
+      const colorToMove = getColorFromFen(game.fen);
+
+      if (
+        colorToMove === game.gameCreatorColor &&
+        ctx.session.user.id !== game.gameCreatorId
+      ) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "It is not your turn to move",
         });
       }
 
       const newFen = makeMove(game.fen, input.from, input.to, input.promotion);
-
-      // Pusher trigger here
 
       await ctx.prisma.chessGame.update({
         where: {
