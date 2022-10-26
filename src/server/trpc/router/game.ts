@@ -273,8 +273,10 @@ export const gameRouter = router({
       const colorToMove = getColorFromFen(game.fen);
 
       if (
-        colorToMove === game.gameCreatorColor &&
-        ctx.session.user.id !== game.gameCreatorId
+        (colorToMove === game.gameCreatorColor &&
+          ctx.session.user.id !== game.gameCreatorId) ||
+        (colorToMove !== game.gameCreatorColor &&
+          ctx.session.user.id !== game.opponentId)
       ) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
