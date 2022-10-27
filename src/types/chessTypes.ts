@@ -1,4 +1,4 @@
-import { PieceSymbol, Square } from "chess.js";
+import { PieceType, Square } from "chess.js";
 
 export interface ChessVec {
   x: number;
@@ -9,10 +9,10 @@ export type MoveInfo = {
   color: "white" | "black";
   from: Square;
   to: Square;
-  piece: PieceSymbol;
+  piece: PieceType;
   san: string;
   flags: Flag[];
-  captured?: PieceSymbol;
+  captured?: PieceType;
   promotion?: "n" | "b" | "r" | "q";
 
   remainingMillis: number;
