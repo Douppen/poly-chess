@@ -30,7 +30,6 @@ const GamePage = ({
   const [gameState, setGameState] = useState(new Chess(serverFen));
   const [selectedSquare, setSelectedSquare] = useState<ChessVec | null>(null);
   const [mouseDownSquare, setMouseDownSquare] = useState<ChessVec | null>(null);
-
   const moveMutation = trpc.game.move.useMutation();
 
   const handleClick = async ({
@@ -42,6 +41,7 @@ const GamePage = ({
     y: number;
     eventType: "mouseDown" | "mouseUp";
   }) => {
+    const turn = gameState.turn() === "w" ? "white" : "black";
     const square = { x, y };
     const squareContent = gameState.get(vecToSan(square));
 
