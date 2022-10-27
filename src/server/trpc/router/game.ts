@@ -7,7 +7,6 @@ import { makeMove } from "$utils/makeMove";
 import { randomId } from "$utils/nanoId";
 import { Chess } from "chess.js";
 import { MovesHistory } from "types/chessTypes";
-import { Prisma } from "@prisma/client";
 import { getColorFromFen } from "$utils/getColorFromFen";
 import { pusherServerClient } from "$server/common/pusher";
 

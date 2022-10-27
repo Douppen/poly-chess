@@ -20,7 +20,7 @@
     "@trpc/react": "10.0.0-proxy-beta.17",
     "@trpc/server": "10.0.0-proxy-beta.17",
     "@types/three": "^0.144.0",
-    "chess.js": "^1.0.0-alpha.0",
+    "chess.js": "0.13.4",
     "crypto-js": "^4.1.1",
     "leva": "^0.9.31",
     "lodash": "^4.17.21",

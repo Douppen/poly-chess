@@ -2,7 +2,6 @@ import ChessModel from "../components/ChessModel";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { useEffect, useState } from "react";
-import { Chess } from "chess.js";
 import { ChessVec } from "types/chessTypes";
 import { vecToSan } from "$utils/chessHelpers";
 import { trpc } from "$utils/trpc";
@@ -13,27 +12,83 @@ import { prisma } from "$server/db/client";
 import { validateMove } from "$utils/validateMove";
 import Pusher from "pusher-js";
 import { env } from "env/client.mjs";
+import { getServerAuthSession } from "$server/common/get-server-auth-session";
+import { isEqual } from "lodash";
+import { Chess } from "chess.js";
+
+type PusherNewMove = {
+  newFen: string;
+};
 
 const GamePage = ({
   gameId: serverGameId,
   fen: serverFen,
+  session: serverSession,
+  whoThere: serverWhoThere,
+  isSolo: serverIsSoloGame,
 }: inferSSRProps<typeof getServerSideProps>) => {
   const [gameState, setGameState] = useState(new Chess(serverFen));
-  const [gameId, setGameId] = useState<string>(serverGameId);
   const [selectedSquare, setSelectedSquare] = useState<ChessVec | null>(null);
+  const [mouseDownSquare, setMouseDownSquare] = useState<ChessVec | null>(null);
 
   const moveMutation = trpc.game.move.useMutation();
 
-  const handleClick = async (square: ChessVec) => {
+  const handleClick = async ({
+    x,
+    y,
+    eventType,
+  }: {
+    x: number;
+    y: number;
+    eventType: "mouseDown" | "mouseUp";
+  }) => {
+    const square = { x, y };
+    const squareContent = gameState.get(vecToSan(square));
+
+    if (eventType === "mouseDown") {
+      setMouseDownSquare(square);
+      return;
+    }
+
+    if (eventType === "mouseUp" && !isEqual(mouseDownSquare, square)) {
+      setSelectedSquare(null);
+      setMouseDownSquare(null);
+      return;
+    }
+
     if (!selectedSquare) {
+      if (!serverIsSoloGame) {
+        if (!squareContent) {
+          setSelectedSquare(null);
+          return;
+        }
+        const squarePieceColor =
+          squareContent.color === "w" ? "white" : "black";
+        if (squarePieceColor !== serverWhoThere.color) {
+          return;
+        }
+      }
+
       setSelectedSquare(square);
       return;
+    }
+
+    if (squareContent) {
+      const squarePieceColor = squareContent.color === "w" ? "white" : "black";
+
+      if (squarePieceColor === serverWhoThere.color) {
+        if (isEqual(selectedSquare, square)) {
+          setSelectedSquare(null);
+          return;
+        }
+        setSelectedSquare(square);
+        return;
+      }
     }
 
     const from = vecToSan(selectedSquare);
     const to = vecToSan(square);
 
-    // client-side check first
     const { isValid, requiresPromotion } = validateMove(
       gameState.fen(),
       from,
@@ -42,16 +97,18 @@ const GamePage = ({
 
     if (!isValid) {
       toast.error("Invalid move");
+      setSelectedSquare(null);
       return;
     } else if (requiresPromotion) {
-      // TODO: implement promotion
+      // TODO: promotion
+      window.prompt("Promote to: ");
       toast.error("Promotion not supported yet");
       return;
     } else {
       // TODO: optimistic update
-      toast.success("Move successful");
+      toast.success("Move successful from client");
       const { success, fen: newFen } = await moveMutation.mutateAsync({
-        gameId,
+        gameId: serverGameId,
         from,
         to,
       });
@@ -86,7 +143,9 @@ const GamePage = ({
       <div className="flex bg-gray-200 text-slate-700">
         <p>it is {gameState.turn() === "w" ? "white's" : "black's"} turn</p>
       </div>
-      <div className="flex bg-gray-200 text-slate-700">game id: {gameId}</div>
+      <div className="flex bg-gray-200 text-slate-700">
+        game id: {serverGameId}
+      </div>
       <Toaster />
       <Canvas camera={{ position: [-5, 8, -8], fov: 50 }}>
         <hemisphereLight color="white" intensity={0.45} />
@@ -104,13 +163,14 @@ const GamePage = ({
   );
 };
 
-type PusherNewMove = {
-  newFen: string;
-};
-
 export const getServerSideProps = async (
   context: GetServerSidePropsContext
 ) => {
+  const session = await getServerAuthSession(context);
+  if (!session || !session.user) {
+    return { redirect: { destination: "/api/auth/signin", permanent: false } };
+  }
+
   const gameId = context.params?.gameId as string;
   const game = await prisma.chessGame.findFirst({
     where: {
@@ -118,6 +178,10 @@ export const getServerSideProps = async (
     },
     select: {
       fen: true,
+      gameCreatorId: true,
+      opponentId: true,
+      gameCreatorColor: true,
+      isSolo: true,
     },
   });
 
@@ -127,12 +191,29 @@ export const getServerSideProps = async (
     };
   }
 
-  const fen = game.fen;
+  const userId = session.user.id;
+  const whoThere: {
+    who: "spectator" | "creator" | "opponent";
+    color: null | "white" | "black";
+  } = {
+    who: "spectator",
+    color: null,
+  };
+  if (userId === game.gameCreatorId) {
+    whoThere.who = "creator";
+    whoThere.color = game.gameCreatorColor;
+  } else if (userId === game.opponentId) {
+    whoThere.who = "opponent";
+    whoThere.color = game.gameCreatorColor === "white" ? "black" : "white";
+  }
 
   return {
     props: {
+      fen: game.fen,
+      isSolo: game.isSolo,
       gameId,
-      fen,
+      session,
+      whoThere,
     },
   };
 };

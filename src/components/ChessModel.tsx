@@ -10,7 +10,7 @@ import * as THREE from "three";
 import React, { useState } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
-import { Color, PieceSymbol, Square } from "chess.js";
+import { PieceColor, PieceType, Square } from "chess.js";
 import { Euler, Vector3 } from "@react-three/fiber";
 import { ChessVec } from "types/chessTypes";
 
@@ -48,8 +48,8 @@ type GLTFResult = GLTF & {
 
 type Position = ({
   square: Square;
-  type: PieceSymbol;
-  color: Color;
+  type: PieceType;
+  color: PieceColor;
 } | null)[][];
 
 const Piece = ({
@@ -57,7 +57,7 @@ const Piece = ({
   color,
   pos,
 }: {
-  type: PieceSymbol;
+  type: PieceType;
   color: "w" | "b";
   pos: { x: number; y: number };
 }) => {
@@ -67,7 +67,7 @@ const Piece = ({
   const rotation: Euler =
     color === "w" ? [Math.PI / 2, 0, 0] : [Math.PI / 2, 0, Math.PI];
 
-  const getGeometryAndMaterialName = (type: PieceSymbol, color: "b" | "w") => {
+  const getGeometryAndMaterialName = (type: PieceType, color: "b" | "w") => {
     let name: "Bishop" | "Pawn" | "Rook" | "Knight" | "King" | "Queen";
     if (type === "b") name = "Bishop";
     else if (type === "p") name = "Pawn";
@@ -104,7 +104,15 @@ const Piece = ({
 
 interface ModelProps {
   boardPosition: Position;
-  handleClick: (square: ChessVec) => void;
+  handleClick: ({
+    x,
+    y,
+    eventType,
+  }: {
+    x: number;
+    y: number;
+    eventType: "mouseDown" | "mouseUp";
+  }) => void;
   selectedSquare: ChessVec | null;
 }
 
@@ -144,18 +152,23 @@ export default function ChessModel({
           {new Array(8).fill(0).map((_, i) => {
             return new Array(8).fill(0).map((_, j) => {
               let color = (i + j) % 2 === 0 ? LIGHT_SQUARE : DARK_SQUARE;
-              if (selectedSquare?.x === i && selectedSquare?.y === j) {
-                color = "brown";
-              }
               if (hovered && hovered.x === i && hovered.y === j) {
                 color = "gray";
+              }
+              if (selectedSquare?.x === i && selectedSquare?.y === j) {
+                color = "brown";
               }
               return (
                 <mesh
                   key={i + j * 8}
                   position={[-i, j - 7, 0]}
                   onPointerOver={() => setHovered({ x: i, y: j })}
-                  onPointerDown={() => handleClick({ x: i, y: j })}
+                  onPointerDown={() =>
+                    handleClick({ x: i, y: j, eventType: "mouseDown" })
+                  }
+                  onPointerUp={() =>
+                    handleClick({ x: i, y: j, eventType: "mouseUp" })
+                  }
                 >
                   <planeGeometry args={[1, 1]} />
                   <meshStandardMaterial color={color} />
