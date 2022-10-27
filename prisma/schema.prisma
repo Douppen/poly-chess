@@ -43,7 +43,7 @@ enum GameState {
 }
 
 model PreGame {
-  id        String   @id @default(cuid()) @unique
+  id        String   @id @unique @default(cuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -68,11 +68,11 @@ model PreGame {
 }
 
 model ChessGame {
-  id           String   @id @default(cuid()) @unique
+  id           String   @id @unique @default(cuid())
   createdAt    DateTime @default(now())
   startingFen  String
   fen          String
-  movesHistory Json @default("[]")
+  movesHistory Json     @default("[]")
 
   whiteBaseTimeSeconds  Int
   whiteIncrementSeconds Int
@@ -88,6 +88,7 @@ model ChessGame {
   state            GameState
   isRated          Boolean
   isInviteOnly     Boolean
+  isSolo           Boolean   @default(false)
   drawOfferedBy    Color?
   result           Result?
 
@@ -109,7 +110,7 @@ model Result {
 
 model User {
   id            String       @id @default(cuid())
-  username      String?       @unique
+  username      String?      @unique
   name          String?
   email         String?      @unique
   emailVerified DateTime?
@@ -130,10 +131,10 @@ model User {
   isPremium Boolean @default(false)
   isOnline  Boolean @default(false)
 
-  bulletRating    Int @default(1500)
-  blitzRating     Int @default(1500)
-  rapidRating     Int @default(1500)
-  classicalRating Int @default(1500)
+  bulletRating    Int        @default(1500)
+  blitzRating     Int        @default(1500)
+  rapidRating     Int        @default(1500)
+  classicalRating Int        @default(1500)
   fideTitle       FideTitle?
 }
 

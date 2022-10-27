@@ -231,6 +231,7 @@ export const gameRouter = router({
           gameCreatorId: true,
           opponentId: true,
           gameCreatorColor: true,
+          isSolo: true,
         },
       });
 
@@ -273,16 +274,25 @@ export const gameRouter = router({
 
       const colorToMove = getColorFromFen(game.fen);
 
-      if (
-        (colorToMove === game.gameCreatorColor &&
-          ctx.session.user.id !== game.gameCreatorId) ||
-        (colorToMove !== game.gameCreatorColor &&
-          ctx.session.user.id !== game.opponentId)
-      ) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "It is not your turn to move",
-        });
+      if (!game.isSolo) {
+        if (
+          colorToMove === game.gameCreatorColor &&
+          ctx.session.user.id !== game.gameCreatorId
+        ) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "It is not your turn to move",
+          });
+        }
+        if (
+          colorToMove !== game.gameCreatorColor &&
+          ctx.session.user.id !== game.opponentId
+        ) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "It is not your turn to move",
+          });
+        }
       }
 
       const newFen = makeMove(game.fen, input.from, input.to, input.promotion);
