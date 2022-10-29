@@ -130,23 +130,23 @@ const GamePage = ({
       return;
     }
 
+    // First click
     if (!selectedSquare) {
+      if (!squareContent) {
+        return;
+      }
       if (!serverIsSoloGame) {
-        if (!squareContent) {
-          setSelectedSquare(null);
-          return;
-        }
         const squarePieceColor =
           squareContent.color === "w" ? "white" : "black";
         if (squarePieceColor !== serverWhoThere.color) {
           return;
         }
       }
-
       setSelectedSquare(square);
       return;
     }
 
+    // Second click
     if (squareContent) {
       const squarePieceColor = squareContent.color === "w" ? "white" : "black";
 
