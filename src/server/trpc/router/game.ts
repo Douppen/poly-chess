@@ -11,6 +11,31 @@ import { getColorFromFen } from "$utils/getColorFromFen";
 import { pusherServerClient } from "$server/common/pusher";
 
 export const gameRouter = router({
+  getFen: publicProcedure
+    .input(
+      z.object({
+        gameId: z.string(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const game = await ctx.prisma.chessGame.findUnique({
+        where: {
+          id: input.gameId,
+        },
+        select: {
+          fen: true,
+        },
+      });
+
+      if (!game) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Game not found",
+        });
+      }
+
+      return game.fen;
+    }),
   createPreGame: protectedProcedure
     .input(
       z.object({
@@ -202,15 +227,6 @@ export const gameRouter = router({
 
       return game;
     }),
-
-  get: publicProcedure.query(({ ctx }) => {
-    const game = ctx.prisma.chessGame.findFirst();
-    return game;
-  }),
-  getAll: publicProcedure.query(({ ctx }) => {
-    const games = ctx.prisma.chessGame.findMany();
-    return games;
-  }),
   move: protectedProcedure
     .input(
       z.object({
@@ -221,6 +237,7 @@ export const gameRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      // TODO: this database query can be quite slow and could be optimized...
       const game = await ctx.prisma.chessGame.findUnique({
         where: {
           id: input.gameId,
@@ -296,7 +313,7 @@ export const gameRouter = router({
 
       const newFen = makeMove(game.fen, input.from, input.to, input.promotion);
 
-      await pusherServerClient.trigger("chessgame", "new-move", {
+      pusherServerClient.trigger("chessgame", "new-move", {
         newFen,
       });
 
@@ -310,7 +327,6 @@ export const gameRouter = router({
       });
 
       return {
-        success: true,
         fen: newFen,
       };
     }),

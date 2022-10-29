@@ -1,4 +1,4 @@
-import { PieceType, Square } from "chess.js";
+import { PieceColor, PieceType, Square } from "chess.js";
 
 export interface ChessVec {
   x: number;
@@ -31,4 +31,17 @@ export enum Flag {
   PROMOTION = "p",
   KSIDE_CASTLE = "k",
   QSIDE_CASTLE = "q",
+}
+
+export type Position = ({
+  square: Square;
+  type: PieceType;
+  color: PieceColor;
+} | null)[][];
+
+export enum PromotionPiece {
+  QUEEN = "q",
+  BISHOP = "b",
+  KNIGHT = "n",
+  ROOK = "r",
 }

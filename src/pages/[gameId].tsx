@@ -1,8 +1,8 @@
 import ChessModel from "../components/ChessModel";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { useEffect, useState } from "react";
-import { ChessVec } from "types/chessTypes";
+import { useEffect, useRef, useState } from "react";
+import { ChessVec, PromotionPiece } from "types/chessTypes";
 import { vecToSan } from "$utils/chessHelpers";
 import { trpc } from "$utils/trpc";
 import toast, { Toaster } from "react-hot-toast";
@@ -15,6 +15,7 @@ import { env } from "env/client.mjs";
 import { getServerAuthSession } from "$server/common/get-server-auth-session";
 import { isEqual } from "lodash";
 import { Chess } from "chess.js";
+import { getColorFromFen } from "$utils/getColorFromFen";
 
 type PusherNewMove = {
   newFen: string;
@@ -27,10 +28,85 @@ const GamePage = ({
   whoThere: serverWhoThere,
   isSolo: serverIsSoloGame,
 }: inferSSRProps<typeof getServerSideProps>) => {
-  const [gameState, setGameState] = useState(new Chess(serverFen));
+  const gameEngine = useRef(new Chess());
+  const utils = trpc.useContext();
+
+  // TODO: make this a custom hook
+  // use useEvent...
+  useEffect(() => {
+    const pusher = new Pusher(env.NEXT_PUBLIC_PUSHER_KEY, {
+      cluster: env.NEXT_PUBLIC_PUSHER_APP_CLUSTER,
+    });
+
+    const channel = pusher.subscribe("chessgame");
+
+    channel.bind("new-move", (data: PusherNewMove) => {
+      console.log("pusher data: ", data);
+      // TODO: optimization - check who sent the move and only update if it's not the current user
+      utils.game.getFen.setData(data.newFen, { gameId: serverGameId });
+    });
+
+    return () => pusher.disconnect();
+  }, [utils, serverGameId]);
+
   const [selectedSquare, setSelectedSquare] = useState<ChessVec | null>(null);
   const [mouseDownSquare, setMouseDownSquare] = useState<ChessVec | null>(null);
-  const moveMutation = trpc.game.move.useMutation();
+  const { data: fenQueryData } = trpc.game.getFen.useQuery({
+    gameId: serverGameId,
+  });
+
+  // TODO: set client react query fen data to fen from server
+
+  const moveMutation = trpc.game.move.useMutation({
+    onSuccess: ({ fen }) => {
+      utils.game.getFen.setData(fen, { gameId: serverGameId });
+      toast.success("Move successful from server");
+    },
+    onMutate: async ({ from, to, promotion }) => {
+      await utils.game.getFen.cancel();
+
+      const previousFen = fenQueryData;
+
+      if (!previousFen) {
+        throw new Error("No previous data");
+      }
+
+      const gameEngine = new Chess(previousFen);
+      gameEngine.move({
+        from,
+        to,
+        promotion,
+      });
+      const newFen = gameEngine.fen();
+
+      utils.game.getFen.setData(newFen, { gameId: serverGameId });
+
+      return { previousFen };
+    },
+    onError: (err, variables, context) => {
+      console.log(err);
+      toast.error("Invalid move from server");
+
+      if (context?.previousFen) {
+        utils.game.getFen.setData(context.previousFen, {
+          gameId: serverGameId,
+        });
+      } else {
+        utils.game.getFen.invalidate();
+      }
+    },
+  });
+
+  if (!fenQueryData) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-9xl">Loading...</div>
+      </div>
+    );
+  }
+
+  gameEngine.current.load(fenQueryData);
+  const turn = getColorFromFen(fenQueryData);
 
   const handleClick = async ({
     x,
@@ -41,9 +117,8 @@ const GamePage = ({
     y: number;
     eventType: "mouseDown" | "mouseUp";
   }) => {
-    const turn = gameState.turn() === "w" ? "white" : "black";
     const square = { x, y };
-    const squareContent = gameState.get(vecToSan(square));
+    const squareContent = gameEngine.current.get(vecToSan(square));
 
     if (eventType === "mouseDown") {
       setMouseDownSquare(square);
@@ -51,7 +126,6 @@ const GamePage = ({
     }
 
     if (eventType === "mouseUp" && !isEqual(mouseDownSquare, square)) {
-      setSelectedSquare(null);
       setMouseDownSquare(null);
       return;
     }
@@ -89,59 +163,35 @@ const GamePage = ({
     const from = vecToSan(selectedSquare);
     const to = vecToSan(square);
 
-    const { isValid, requiresPromotion } = validateMove(
-      gameState.fen(),
-      from,
-      to
-    );
+    const { isValid, requiresPromotion } = validateMove(fenQueryData, from, to);
 
     if (!isValid) {
       toast.error("Invalid move");
       setSelectedSquare(null);
       return;
-    } else if (requiresPromotion) {
-      // TODO: promotion
-      window.prompt("Promote to: ");
-      toast.error("Promotion not supported yet");
-      return;
     } else {
-      // TODO: optimistic update
+      let promotion: PromotionPiece | undefined;
+      if (requiresPromotion) {
+        // TODO: promotion
+        window.prompt("Promote to: ");
+        promotion = PromotionPiece.QUEEN;
+      }
       toast.success("Move successful from client");
-      const { success, fen: newFen } = await moveMutation.mutateAsync({
+      moveMutation.mutate({
         gameId: serverGameId,
         from,
         to,
+        promotion,
       });
-      if (!success) {
-        toast.error("Invalid move from server");
-      } else {
-        toast.success("Move successful from server");
-        setGameState(new Chess(newFen));
-      }
     }
 
     setSelectedSquare(null);
   };
 
-  useEffect(() => {
-    const pusher = new Pusher(env.NEXT_PUBLIC_PUSHER_KEY, {
-      cluster: env.NEXT_PUBLIC_PUSHER_APP_CLUSTER,
-    });
-
-    const channel = pusher.subscribe("chessgame");
-
-    channel.bind("new-move", (data: PusherNewMove) => {
-      console.log("pusher data: ", data);
-      setGameState(new Chess(data.newFen));
-    });
-
-    return () => pusher.disconnect();
-  }, []);
-
   return (
     <div id="canvas-container" style={{ height: "100vh" }}>
       <div className="flex bg-gray-200 text-slate-700">
-        <p>it is {gameState.turn() === "w" ? "white's" : "black's"} turn</p>
+        <p>it is {`${turn}'s`} turn</p>
       </div>
       <div className="flex bg-gray-200 text-slate-700">
         game id: {serverGameId}
@@ -152,9 +202,9 @@ const GamePage = ({
         <spotLight position={[50, 50, 10]} angle={0.15} penumbra={1} />
         <group position={[4, 0, -3]}>
           <ChessModel
-            boardPosition={gameState.board()}
             handleClick={handleClick}
             selectedSquare={selectedSquare}
+            fen={fenQueryData}
           />
         </group>
         <OrbitControls />

@@ -7,12 +7,12 @@ title: Low Poly Chess Set
 */
 
 import * as THREE from "three";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
-import { PieceColor, PieceType, Square } from "chess.js";
+import { Chess, PieceType } from "chess.js";
 import { Euler, Vector3 } from "@react-three/fiber";
-import { ChessVec } from "types/chessTypes";
+import { ChessVec, Position } from "types/chessTypes";
 
 const LIGHT_SQUARE = "#DFD2C2";
 const DARK_SQUARE = "#4C4C4C";
@@ -45,12 +45,6 @@ type GLTFResult = GLTF & {
     BoardOutlineMaterial: THREE.MeshStandardMaterial;
   };
 };
-
-type Position = ({
-  square: Square;
-  type: PieceType;
-  color: PieceColor;
-} | null)[][];
 
 const Piece = ({
   type,
@@ -103,7 +97,8 @@ const Piece = ({
 };
 
 interface ModelProps {
-  boardPosition: Position;
+  fen: string;
+  selectedSquare: ChessVec | null;
   handleClick: ({
     x,
     y,
@@ -113,19 +108,29 @@ interface ModelProps {
     y: number;
     eventType: "mouseDown" | "mouseUp";
   }) => void;
-  selectedSquare: ChessVec | null;
 }
 
 export default function ChessModel({
-  boardPosition,
-  handleClick,
+  fen,
   selectedSquare,
+  handleClick,
 }: ModelProps) {
   const { nodes, materials } = useGLTF(
     "/chess-set-models.glb"
   ) as unknown as GLTFResult;
 
+  const gameEngine = useRef(new Chess(fen));
+  const [boardPosition, setBoardPosition] = useState<Position>(
+    gameEngine.current.board()
+  );
   const [hovered, setHovered] = useState<ChessVec | null>(null);
+
+  useEffect(() => {
+    setBoardPosition(() => {
+      gameEngine.current.load(fen);
+      return gameEngine.current.board();
+    });
+  }, [fen]);
 
   return (
     <group dispose={null}>
