@@ -9,12 +9,12 @@ import { createTRPCNext } from "@trpc/next";
 import type { GetInferenceHelpers } from "@trpc/server";
 import type { AppRouter } from "../server/trpc/router/_app";
 import { NextPageContext } from "next";
-import { env } from "env/server.mjs";
+import { env } from "env/client.mjs";
 
 const getEndingLink = (ctx: NextPageContext | undefined) => {
   if (typeof window === "undefined") {
     return httpBatchLink({
-      url: `${env.APP_URL}/api/trpc`,
+      url: `${env.NEXT_PUBLIC_APP_URL}/api/trpc`,
       headers() {
         if (ctx?.req) {
           // on ssr, forward client's headers to the server
@@ -28,7 +28,7 @@ const getEndingLink = (ctx: NextPageContext | undefined) => {
     });
   }
   const client = createWSClient({
-    url: env.WS_URL,
+    url: env.NEXT_PUBLIC_WS_URL,
   });
   return wsLink<AppRouter>({
     client,

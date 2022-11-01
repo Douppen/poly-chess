@@ -1,5 +1,5 @@
-import { createContext } from "./context";
-import { appRouter } from "./router/_app";
+import { createContext } from "./trpc/context";
+import { appRouter } from "./trpc/router/_app";
 import { applyWSSHandler } from "@trpc/server/adapters/ws";
 import fetch from "node-fetch";
 import ws from "ws";
@@ -18,7 +18,13 @@ wss.on("connection", (ws) => {
   ws.once("close", () => {
     console.log(`Closed connection (${wss.clients.size})`);
   });
+
+  ws.on("message", (data) => {
+    console.log("message", data.toString());
+    ws.send(data.toString() + " sent back");
+  });
 });
+
 console.log("✅ WebSocket Server listening on ws://localhost:3001");
 
 process.on("SIGTERM", () => {

@@ -1,5 +1,5 @@
-import { createContext } from "./context";
-import { appRouter } from "./router/_app";
+import { createContext } from "./trpc/context";
+import { appRouter } from "./trpc/router/_app";
 import { applyWSSHandler } from "@trpc/server/adapters/ws";
 import http from "http";
 import next from "next";
