@@ -34,9 +34,7 @@
     "three": "^0.145.0",
     "ws": "^8.10.0",
     "zod": "^3.18.0",
-    "zustand": "^4.1.2"
-  },
-  "devDependencies": {
+    "zustand": "^4.1.2",
     "@types/chess.js": "^0.13.3",
     "@types/crypto-js": "^4.1.1",
     "@types/lodash": "^4.14.186",
