@@ -1,38 +1,25 @@
-// src/server/router/context.ts
-import type { inferAsyncReturnType } from "@trpc/server";
 import type { CreateNextContextOptions } from "@trpc/server/adapters/next";
-import type { Session } from "next-auth";
-import { getServerAuthSession } from "../common/get-server-auth-session";
+import type { inferAsyncReturnType } from "@trpc/server";
 import { prisma } from "../db/client";
+import { NodeHTTPCreateContextFnOptions } from "@trpc/server/dist/adapters/node-http";
+import { IncomingMessage } from "http";
+import { getSession } from "next-auth/react";
+import ws from "ws";
 
-type CreateContextOptions = {
-  session: Session | null;
-};
+export const createContext = async (
+  opts:
+    | CreateNextContextOptions
+    | NodeHTTPCreateContextFnOptions<IncomingMessage, ws>
+) => {
+  // TODO: use serversidesession instead
+  const session = await getSession(opts);
 
-/** Use this helper for:
- * - testing, so we dont have to mock Next.js' req/res
- * - trpc's `createSSGHelpers` where we don't have req/res
- **/
-export const createContextInner = async (opts: CreateContextOptions) => {
+  console.log("createContext for", session?.user?.name ?? "unknown user");
+
   return {
-    session: opts.session,
+    session,
     prisma,
   };
-};
-
-/**
- * This is the actual context you'll use in your router
- * @link https://trpc.io/docs/context
- **/
-export const createContext = async (opts: CreateNextContextOptions) => {
-  const { req, res } = opts;
-
-  // Get the session from the server using the unstable_getServerSession wrapper function
-  const session = await getServerAuthSession({ req, res });
-
-  return await createContextInner({
-    session,
-  });
 };
 
 export type Context = inferAsyncReturnType<typeof createContext>;
