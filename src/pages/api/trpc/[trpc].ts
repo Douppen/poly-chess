@@ -17,7 +17,4 @@ export default createNextApiHandler({
             console.error("Something went wrong", error);
           }
         },
-  batching: {
-    enabled: true,
-  },
 });

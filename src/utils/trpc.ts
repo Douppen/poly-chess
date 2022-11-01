@@ -1,6 +1,4 @@
-// src/utils/trpc.ts
 import superjson from "superjson";
-
 import {
   createWSClient,
   httpBatchLink,
@@ -9,19 +7,14 @@ import {
 } from "@trpc/client";
 import { createTRPCNext } from "@trpc/next";
 import type { GetInferenceHelpers } from "@trpc/server";
-
 import type { AppRouter } from "../server/trpc/router/_app";
 import { NextPageContext } from "next";
-import getConfig from "next/config";
-
-const { publicRuntimeConfig } = getConfig();
-
-const { APP_URL, WS_URL } = publicRuntimeConfig;
+import { env } from "env/server.mjs";
 
 const getEndingLink = (ctx: NextPageContext | undefined) => {
   if (typeof window === "undefined") {
     return httpBatchLink({
-      url: `${APP_URL}/api/trpc`,
+      url: `${env.APP_URL}/api/trpc`,
       headers() {
         if (ctx?.req) {
           // on ssr, forward client's headers to the server
@@ -35,7 +28,7 @@ const getEndingLink = (ctx: NextPageContext | undefined) => {
     });
   }
   const client = createWSClient({
-    url: WS_URL,
+    url: env.WS_URL,
   });
   return wsLink<AppRouter>({
     client,
