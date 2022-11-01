@@ -11,7 +11,7 @@ export const createContext = async (
     | CreateNextContextOptions
     | NodeHTTPCreateContextFnOptions<IncomingMessage, ws>
 ) => {
-  // TODO: use serversidesession instead
+  // TODO: use serversidesession instead.
   const session = await getSession(opts);
 
   console.log("createContext for", session?.user?.name ?? "unknown user");
