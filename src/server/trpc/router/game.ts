@@ -8,7 +8,6 @@ import { randomId } from "$utils/nanoId";
 import { Chess } from "chess.js";
 import { MovesHistory } from "types/chessTypes";
 import { getColorFromFen } from "$utils/getColorFromFen";
-import { pusherServerClient } from "$server/common/pusher";
 
 export const gameRouter = router({
   getFen: publicProcedure
@@ -313,9 +312,7 @@ export const gameRouter = router({
 
       const newFen = makeMove(game.fen, input.from, input.to, input.promotion);
 
-      pusherServerClient.trigger("chessgame", "new-move", {
-        newFen,
-      });
+      // WebSocket stuff
 
       await ctx.prisma.chessGame.update({
         where: {

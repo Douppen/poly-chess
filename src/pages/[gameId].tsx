@@ -1,7 +1,7 @@
 import ChessModel from "../components/ChessModel";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ChessVec, PromotionPiece } from "types/chessTypes";
 import { vecToSan } from "$utils/chessHelpers";
 import { trpc } from "$utils/trpc";
@@ -10,16 +10,10 @@ import { GetServerSidePropsContext } from "next";
 import { inferSSRProps } from "types/inferSSRProps";
 import { prisma } from "$server/db/client";
 import { validateMove } from "$utils/validateMove";
-import Pusher from "pusher-js";
-import { env } from "env/client.mjs";
 import { getServerAuthSession } from "$server/common/get-server-auth-session";
 import { isEqual } from "lodash";
 import { Chess } from "chess.js";
 import { getColorFromFen } from "$utils/getColorFromFen";
-
-type PusherNewMove = {
-  newFen: string;
-};
 
 const GamePage = ({
   gameId: serverGameId,
@@ -31,23 +25,7 @@ const GamePage = ({
   const gameEngine = useRef(new Chess());
   const utils = trpc.useContext();
 
-  // TODO: make this a custom hook
-  // use useEvent...
-  useEffect(() => {
-    const pusher = new Pusher(env.NEXT_PUBLIC_PUSHER_KEY, {
-      cluster: env.NEXT_PUBLIC_PUSHER_APP_CLUSTER,
-    });
-
-    const channel = pusher.subscribe("chessgame");
-
-    channel.bind("new-move", (data: PusherNewMove) => {
-      console.log("pusher data: ", data);
-      // TODO: optimization - check who sent the move and only update if it's not the current user
-      utils.game.getFen.setData(data.newFen, { gameId: serverGameId });
-    });
-
-    return () => pusher.disconnect();
-  }, [utils, serverGameId]);
+  // WebSockets stuff useEffect
 
   const [selectedSquare, setSelectedSquare] = useState<ChessVec | null>(null);
   const [mouseDownSquare, setMouseDownSquare] = useState<ChessVec | null>(null);
