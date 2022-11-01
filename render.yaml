@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: polychess
+    env: node
+    region: frankfurt
+    repo: https://github.com/Douppen/poly-chess
+    plan: free
+    branch: render
+    buildCommand: yarn install && yarn build
+    startCommand: yarn start
+    healthCheckPath: /api/trpc/healthcheck
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: polychess-db
+          property: connectionString
+
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: polychess-redis
+          property: connectionString
+
+      - fromGroup: polychess
+  - type: redis
+    name: polychess-redis
+    region: frankfurt
+    plan: free
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  - name: polychess-db
+    plan: free
+    region: frankfurt
