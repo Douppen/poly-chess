@@ -222,6 +222,7 @@ export const getServerSideProps = async (
   }
 
   const gameId = context.params?.gameId as string;
+
   const game = await prisma.chessGame.findFirst({
     where: {
       id: gameId,
