@@ -35,6 +35,34 @@ export const gameRouter = router({
 
       return game.fen;
     }),
+  getOtherGameData: publicProcedure
+    .input(
+      z.object({
+        gameId: z.string(),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const game = await ctx.prisma.chessGame.findUnique({
+        where: {
+          id: input.gameId,
+        },
+        select: {
+          gameCreatorId: true,
+          opponentId: true,
+          gameCreatorColor: true,
+          isSolo: true,
+        },
+      });
+
+      if (!game) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Game not found",
+        });
+      }
+
+      return game;
+    }),
   createPreGame: protectedProcedure
     .input(
       z.object({
@@ -236,7 +264,6 @@ export const gameRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // TODO: this database query can be quite slow and could be optimized...
       const game = await ctx.prisma.chessGame.findUnique({
         where: {
           id: input.gameId,

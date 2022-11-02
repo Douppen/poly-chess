@@ -6,38 +6,35 @@ import { ChessVec, PromotionPiece } from "types/chessTypes";
 import { vecToSan } from "$utils/chessHelpers";
 import { trpc } from "$utils/trpc";
 import toast, { Toaster } from "react-hot-toast";
-import { GetServerSidePropsContext } from "next";
-import { inferSSRProps } from "types/inferSSRProps";
-import { prisma } from "$server/db/client";
 import { validateMove } from "$utils/validateMove";
-import { getServerAuthSession } from "$server/common/get-server-auth-session";
 import { isEqual } from "lodash";
 import { Chess } from "chess.js";
 import { getColorFromFen } from "$utils/getColorFromFen";
+import { useRouter } from "next/router";
+import { useSession } from "next-auth/react";
 
-const GamePage = ({
-  gameId: serverGameId,
-  fen: serverFen,
-  session: serverSession,
-  whoThere: serverWhoThere,
-  isSolo: serverIsSoloGame,
-}: inferSSRProps<typeof getServerSideProps>) => {
+const GamePage = () => {
   const gameEngine = useRef(new Chess());
+  const session = useSession();
   const utils = trpc.useContext();
+
+  const router = useRouter();
+  const gameId = router.query.gameId as string;
 
   // WebSockets stuff useEffect
 
   const [selectedSquare, setSelectedSquare] = useState<ChessVec | null>(null);
   const [mouseDownSquare, setMouseDownSquare] = useState<ChessVec | null>(null);
   const { data: fenQueryData } = trpc.game.getFen.useQuery({
-    gameId: serverGameId,
+    gameId,
   });
-
-  // TODO: set client react query fen data to fen from server
+  const { data: game } = trpc.game.getOtherGameData.useQuery({
+    gameId,
+  });
 
   const moveMutation = trpc.game.move.useMutation({
     onSuccess: ({ fen }) => {
-      utils.game.getFen.setData(fen, { gameId: serverGameId });
+      utils.game.getFen.setData(fen, { gameId });
       toast.success("Move successful from server");
     },
     onMutate: async ({ from, to, promotion }) => {
@@ -57,7 +54,7 @@ const GamePage = ({
       });
       const newFen = gameEngine.fen();
 
-      utils.game.getFen.setData(newFen, { gameId: serverGameId });
+      utils.game.getFen.setData(newFen, { gameId });
 
       return { previousFen };
     },
@@ -67,7 +64,7 @@ const GamePage = ({
 
       if (context?.previousFen) {
         utils.game.getFen.setData(context.previousFen, {
-          gameId: serverGameId,
+          gameId,
         });
       } else {
         utils.game.getFen.invalidate();
@@ -75,7 +72,7 @@ const GamePage = ({
     },
   });
 
-  if (!fenQueryData) {
+  if (!fenQueryData || !game || !session.data) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-9xl">Loading...</div>
@@ -83,8 +80,33 @@ const GamePage = ({
     );
   }
 
+  if (!session.data.user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-9xl">Not logged in</div>
+      </div>
+    );
+  }
+
   gameEngine.current.load(fenQueryData);
   const turn = getColorFromFen(fenQueryData);
+
+  const userId = session.data.user?.id;
+
+  const whoThere: {
+    who: "spectator" | "creator" | "opponent";
+    color: null | "white" | "black";
+  } = {
+    who: "spectator",
+    color: null,
+  };
+  if (userId === game.gameCreatorId) {
+    whoThere.who = "creator";
+    whoThere.color = game.gameCreatorColor;
+  } else if (userId === game.opponentId) {
+    whoThere.who = "opponent";
+    whoThere.color = game.gameCreatorColor === "white" ? "black" : "white";
+  }
 
   const handleClick = async ({
     x,
@@ -109,14 +131,14 @@ const GamePage = ({
     }
 
     if (!selectedSquare) {
-      if (!serverIsSoloGame) {
+      if (!game.isSolo) {
         if (!squareContent) {
           setSelectedSquare(null);
           return;
         }
         const squarePieceColor =
           squareContent.color === "w" ? "white" : "black";
-        if (squarePieceColor !== serverWhoThere.color) {
+        if (squarePieceColor !== whoThere.color) {
           return;
         }
       }
@@ -128,7 +150,7 @@ const GamePage = ({
     if (squareContent) {
       const squarePieceColor = squareContent.color === "w" ? "white" : "black";
 
-      if (squarePieceColor === serverWhoThere.color) {
+      if (squarePieceColor === whoThere.color) {
         if (isEqual(selectedSquare, square)) {
           setSelectedSquare(null);
           return;
@@ -156,7 +178,7 @@ const GamePage = ({
       }
       toast.success("Move successful from client");
       moveMutation.mutate({
-        gameId: serverGameId,
+        gameId,
         from,
         to,
         promotion,
@@ -171,9 +193,7 @@ const GamePage = ({
       <div className="flex bg-gray-200 text-slate-700">
         <p>it is {`${turn}'s`} turn</p>
       </div>
-      <div className="flex bg-gray-200 text-slate-700">
-        game id: {serverGameId}
-      </div>
+      <div className="flex bg-gray-200 text-slate-700">game id: {gameId}</div>
       <Toaster />
       <Canvas camera={{ position: [-5, 8, -8], fov: 50 }}>
         <hemisphereLight color="white" intensity={0.45} />
@@ -189,61 +209,6 @@ const GamePage = ({
       </Canvas>
     </div>
   );
-};
-
-export const getServerSideProps = async (
-  context: GetServerSidePropsContext
-) => {
-  const session = await getServerAuthSession(context);
-  if (!session || !session.user) {
-    return { redirect: { destination: "/api/auth/signin", permanent: false } };
-  }
-
-  const gameId = context.params?.gameId as string;
-  const game = await prisma.chessGame.findFirst({
-    where: {
-      id: gameId,
-    },
-    select: {
-      fen: true,
-      gameCreatorId: true,
-      opponentId: true,
-      gameCreatorColor: true,
-      isSolo: true,
-    },
-  });
-
-  if (!game) {
-    return {
-      notFound: true,
-    };
-  }
-
-  const userId = session.user.id;
-  const whoThere: {
-    who: "spectator" | "creator" | "opponent";
-    color: null | "white" | "black";
-  } = {
-    who: "spectator",
-    color: null,
-  };
-  if (userId === game.gameCreatorId) {
-    whoThere.who = "creator";
-    whoThere.color = game.gameCreatorColor;
-  } else if (userId === game.opponentId) {
-    whoThere.who = "opponent";
-    whoThere.color = game.gameCreatorColor === "white" ? "black" : "white";
-  }
-
-  return {
-    props: {
-      fen: game.fen,
-      isSolo: game.isSolo,
-      gameId,
-      session,
-      whoThere,
-    },
-  };
 };
 
 export default GamePage;

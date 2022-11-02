@@ -50,11 +50,6 @@ const Home: NextPage = () => {
           />
         </div>
         <AuthShowcase />
-        <div className="mt-4">
-          <Link href="/questions">
-            <a className="text-lg hover:text-blue-700">See & ask questions</a>
-          </Link>
-        </div>
       </main>
     </>
   );

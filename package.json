@@ -10,7 +10,7 @@
     "build": "npm-run-all build:*",
     "dev:wss": "cross-env PORT=3001 NODE_ENV=development tsx src/server/wssDevServer.ts --tsconfig tsconfig.server.json",
     "dev:next": "next dev",
-    "dev": "npm-run-all dev:*",
+    "dev": "run-p dev:*",
     "start": "cross-env NODE_ENV=production node dist/server/prodServer.js",
     "postinstall": "prisma generate",
     "lint": "next lint",
@@ -42,6 +42,7 @@
     "crypto-js": "^4.1.1",
     "eslint": "8.22.0",
     "eslint-config-next": "12.3.1",
+    "express": "^4.18.2",
     "lodash": "^4.17.21",
     "nanoid": "^4.0.0",
     "next": "12.3.1",
@@ -67,5 +68,8 @@
   },
   "ct3aMetadata": {
     "initVersion": "6.4.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.14"
   }
 }
