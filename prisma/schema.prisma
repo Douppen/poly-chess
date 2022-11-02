@@ -63,6 +63,8 @@ model PreGame {
 
   preGameCreator  User  @relation(fields: [preGameCreatorId], references: [id], name: "creator")
   preGameOpponent User? @relation(fields: [preGameOpponentId], references: [id], name: "opponent")
+
+  @@map("pre_games")
 }
 
 model ChessGame {
@@ -95,6 +97,8 @@ model ChessGame {
 
   gameCreator User @relation(fields: [gameCreatorId], references: [id], name: "creator")
   opponent    User @relation(fields: [opponentId], references: [id], name: "opponent")
+
+  @@map("chess_games")
 }
 
 model Result {
@@ -104,6 +108,8 @@ model Result {
   winner      Winner
   endReason   EndReason
   endDateTime DateTime
+
+  @@map("results")
 }
 
 model User {
@@ -134,6 +140,8 @@ model User {
   rapidRating     Int        @default(1500)
   classicalRating Int        @default(1500)
   fideTitle       FideTitle?
+
+  @@map("users")
 }
 
 model Account {
@@ -153,6 +161,7 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@map("accounts")
 }
 
 model Session {
@@ -161,6 +170,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
 }
 
 model VerificationToken {
@@ -169,6 +180,7 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+  @@map("verification_tokens")
 }
 
 enum FideTitle {
